@@ -1,10 +1,9 @@
-
-
 # Inventendo
+![img_4.png](img_4.png)
 
 **Inventendo** is a B2B SaaS platform designed to transform supply chain and logistics operations through centralized visibility, real-time analytics, and intelligent decision-making. We empower organizations to move from reactive operations to proactive, data-driven strategies.
 
-## 🎯 Problem We Solve
+## Problem We Solve
 
 Many organizations operate with fragmented systems and delayed reports, resulting in:
 - **Reactive Operations**: Slow response to changing conditions
@@ -15,40 +14,88 @@ Inventendo changes this by centralizing operational data and providing real-time
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-### 📊 Real-Time Dashboard Access
+### Real-Time Dashboard Access
+
 Each user receives a dedicated, role-based dashboard tailored to their responsibilities:
 - **Operations Managers**: End-to-end visibility into logistics networks
 - **Supply Chain Directors**: Strategic insights and trend analysis
 - **Analytics Teams**: Deep-dive data exploration and custom reporting
 - **Finance Teams**: Cost analysis and billing insights
 
-### 🤖 AI-Powered Monitoring
+### AI-Powered Monitoring
+
 Advanced anomaly detection and early warning systems that analyze:
 - Historical operational patterns
 - Live data streams
 - Predictive risk indicators
 - Proactive alerts before issues escalate
 
-### 🔐 Enterprise-Grade Security
+### Enterprise-Grade Security
+
 - **Role-Based Access Control (RBAC)**: Granular permission management
 - **Multi-Tenant Architecture**: Secure data isolation between organizations
 - **Secure Authentication**: Industry-standard authentication and authorization
 - **Data Encryption**: End-to-end protection for sensitive information
 
-### 💳 Subscription-Based SaaS
+### Subscription-Based SaaS
+
 - Integrated payment gateways for flexible billing
 - Scalable pricing tiers for businesses of all sizes
 - Usage-based analytics and transparent cost tracking
 
 ---
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 Inventendo is built on a **microservices architecture** designed for scalability, reliability, and fault isolation:
 
-![img_4.png](img_4.png)
+```
+                          CLIENT LAYER
+                              |
+                         Statenah Gateway
+                              |
+                         Load Balancer
+                              |
+                         API Gateway
+                              |
+    ____________________________________________________________________
+    |                                                                  |
+    v                                                                  v
+KUBERNETES CLUSTER                                            EXTERNAL SERVICES
+    |                                                                  |
+    |---> User Profile Service                              Payment Gateway
+    |     |                                                            |
+    |---> Product Catalog Service                          Billing Service
+    |     |                                                            |
+    |---> Order Processing Service                         Analytics Service
+    |     |                                                            |
+    |---> Monitoring Service                               Logging Service
+    |     |
+    |---> Analytics Service
+    |
+    v
+APACHE KAFKA CLUSTER
+    |
+    |---> Event Streaming
+    |---> Log Aggregation
+    |---> Async Processing
+    |---> Billing Workflows
+    |---> Analytics Pipeline
+    |
+    v
+DATA LAYER
+    |
+    |---> PostgreSQL (Transactional Data)
+    |---> Redis Cache (High-Speed Access)
+    |---> Secondary Database (Historical Data)
+    |
+EXTERNAL AUTHENTICATION
+    |
+    |---> AuthN Service
+    |---> AuthN ProfileZ Service
+```
 
 ### Core Components
 
@@ -67,11 +114,11 @@ Inventendo is built on a **microservices architecture** designed for scalability
 
 **Event-Driven Pipeline:**
 - **Apache Kafka Cluster**: Asynchronous event processing for:
-    - Analytics data pipelines
-    - Billing workflows
-    - Monitoring triggers
-    - Audit logging
-    - Reliable, decoupled communication between services
+  - Analytics data pipelines
+  - Billing workflows
+  - Monitoring triggers
+  - Audit logging
+  - Reliable, decoupled communication between services
 
 **Data Layer:**
 - **PostgreSQL**: Transactional data (user profiles, orders, billing)
@@ -85,7 +132,7 @@ Inventendo is built on a **microservices architecture** designed for scalability
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 **Frontend & Web:**
 - Next.js - Modern React-based web framework
@@ -114,14 +161,14 @@ Inventendo is built on a **microservices architecture** designed for scalability
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### For New Users
 
-1. **Create Account**: Register with your organization's details
-2. **Setup Dashboard**: Customize your dashboard based on your role
-3. **Configure Access**: Invite team members and assign roles
-4. **Start Monitoring**: Access real-time insights immediately
+1. Create Account: Register with your organization's details
+2. Setup Dashboard: Customize your dashboard based on your role
+3. Configure Access: Invite team members and assign roles
+4. Start Monitoring: Access real-time insights immediately
 
 ### User Roles & Dashboard Access
 
@@ -157,19 +204,19 @@ Inventendo is built on a **microservices architecture** designed for scalability
 
 ---
 
-## 📈 Why Choose Inventendo?
+## Why Choose Inventendo?
 
-✅ **Real-Time Insights**: Sub-second dashboard updates powered by Redis caching  
-✅ **Scalability**: Kubernetes-orchestrated microservices grow with your needs  
-✅ **Reliability**: Event-driven architecture ensures no data loss  
-✅ **Intelligence**: AI-powered anomaly detection catches issues before they impact operations  
-✅ **Security**: Enterprise-grade multi-tenant isolation and role-based access  
-✅ **Flexibility**: Subscription model with transparent, usage-based pricing  
-✅ **Integration**: Open APIs for seamless connection with existing systems
+- **Real-Time Insights**: Sub-second dashboard updates powered by Redis caching
+- **Scalability**: Kubernetes-orchestrated microservices grow with your needs
+- **Reliability**: Event-driven architecture ensures no data loss
+- **Intelligence**: AI-powered anomaly detection catches issues before they impact operations
+- **Security**: Enterprise-grade multi-tenant isolation and role-based access
+- **Flexibility**: Subscription model with transparent, usage-based pricing
+- **Integration**: Open APIs for seamless connection with existing systems
 
 ---
 
-## 🔒 Security & Compliance
+## Security & Compliance
 
 - **Data Isolation**: Complete multi-tenant data separation
 - **Role-Based Access**: Granular permission controls per user
@@ -179,25 +226,25 @@ Inventendo is built on a **microservices architecture** designed for scalability
 
 ---
 
-## 💬 Support & Documentation
+## Support & Documentation
 
 For questions, feature requests, or technical support, please reach out to our team:
 
-**Documentation**: Coming soon  
-**Support**: [support@inventendo.com](mailto:support@inventendo.com)  
-**Status Page**: [status.inventendo.com](https://status.inventendo.com)
+Documentation: Coming soon
+Support: support@inventendo.com
+Status Page: status.inventendo.com
 
 ---
 
-## 📄 License
+## License
 
 Proprietary - All rights reserved
 
 ---
 
-**Ready to transform your supply chain operations?**  
-[Get Started with Inventendo](https://inventendo.com/signup)
+Ready to transform your supply chain operations?
+Get Started with Inventendo: https://inventendo.com/signup
 
 ---
 
-*Inventendo - Making Supply Chain Visibility Intelligent*
+Inventendo - Making Supply Chain Visibility Intelligent
