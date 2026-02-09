@@ -29,11 +29,11 @@ public interface InventoryRepository extends JpaRepository<Inventory,Long> {
     @Query("SELECT i FROM Inventory i WHERE i.warehouseId = :warehouseId AND i.InventoryStatus = 'ACTIVE'")
     List<Inventory> findActiveByWarehouse(@Param("warehouseId") String warehouseId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE Inventory i SET i.reservedQuantity = i.reservedQuantity+ :quantity WHERE i.sku= :sku AND i.quantity - i.reservedQuantity>= :quantity")
     int reserveStock(@Param("sku") String sku, @Param("quantity") Integer quantity);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("UPDATE Inventory  i SET i.reservedQuantity = i.reservedQuantity - :quantity, i.quantity = i.quantity - :quantity WHERE i.sku=:sku")
     int releaseStock(@Param("sku") String sku, @Param("quantity") Integer quantity);
 

@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
+
     private final KafkaTemplate<String,Object> KafkaTemplate;
 
     @Transactional

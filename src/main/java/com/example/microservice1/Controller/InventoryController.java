@@ -41,7 +41,7 @@ public class InventoryController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/warehouse/{warehouseId")
+    @GetMapping("/warehouse/{warehouseId}")
     public ResponseEntity<List<InventoryResponse>> getInventoryByWareHouse(@PathVariable String warehouseId){
         List<InventoryResponse>response = inventoryService.getInventoryByWarehouse(warehouseId);
         return  ResponseEntity.ok(response);
@@ -80,6 +80,7 @@ public class InventoryController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{sku}/release")
     public ResponseEntity<Void> releaseStock(
             @PathVariable String sku,
             @RequestBody Map<String,Integer> request
