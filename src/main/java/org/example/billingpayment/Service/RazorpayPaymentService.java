@@ -1,6 +1,7 @@
 package org.example.billingpayment.Service;
 
 //import com.razorpay.Payment;
+import io.jsonwebtoken.security.MacAlgorithm;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.billingpayment.Model.Payment;
@@ -14,7 +15,10 @@ import com.razorpay.Order;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 
 /**
  * RazorpayPaymentService: Handles all Razorpay-specific payment logic.
@@ -110,14 +114,10 @@ public class RazorpayPaymentService {
                     .status(Payment.PaymentStatus.INITIATED)
                     .build();
 
-
-
-
         } catch (RazorpayException e) {
             log.error("Failed to create Razorpay order: {}", e.getMessage());
             throw new RuntimeException("Payment initiation failed: " + e.getMessage());
         }
-
 
     }
 
@@ -158,9 +158,94 @@ public class RazorpayPaymentService {
     Payment saved = paymentRepository.save(payment);
     log.info("Razorpay payment verified and captured: {}",saved.getId());
 
-    return mapTpPaymentResponse(saved);
+    return mapToPaymentResponse(saved);
 
     }
+
+    private boolean verifyRazorpaySignature(String orderId,String paymentId,String signature){
+        try{
+            String message = orderId + "|" + paymentId;
+
+            Mac mac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKeySpec = new SecretKeySpec(
+                    razorpayKeySecret.getBytes(StandardCharsets.UTF_8),
+                    "HmacSHA256"
+            );
+            mac.init(secretKeySpec);
+            byte[] hash = mac.doFinal(message.getBytes(StandardCharsets.UTF_8));
+
+
+            // Convert byte array to hex String
+
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash){
+                String hex = Integer.toHexString(0xff & b);
+                if(hex.length() == 1) hexString.append('0');
+                hexString.append(hex);
+            }
+
+            return hexString.toString().equals(signature);
+
+        }catch (Exception e){
+            log.error("Error verifying Razorpay signature: {}",e.getMessage());
+            return false;
+        }
+
+
+
+    }
+
+    /**
+     * Process a refund back to customer through Razorpay.
+     * Full refund or partial refund based on refundAmount.
+     */
+    public PaymentDto.PaymentResponse processRefund(String paymentId,BigDecimal refundAmount){
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(()-> new RuntimeException("Payment not found"));
+
+        if(payment.getStatus()!= Payment.PaymentStatus.SUCCESS){
+            throw new IllegalStateException("Can only refund successful payments");
+        }
+        try{
+            RazorpayClient razorpay = new RazorpayClient(razorpayKeyId,razorpayKeySecret);
+
+            JSONObject refundRequest = new JSONObject();
+
+            if(refundAmount!=null){
+                //Partial refund - convert to paise
+                refundRequest.put("amount",refundAmount.multiply(BigDecimal.valueOf(100)).longValue());
+            }
+
+            razorpay.payments.refund(payment.getGatewayPaymentId(),refundRequest);
+
+            payment.setStatus(Payment.PaymentStatus.REFUNDED);
+            paymentRepository.save(payment);
+
+            log.info("Refund processed for payment: {}", paymentId);
+            return mapToPaymentResponse(payment);
+
+        } catch (RazorpayException e){
+            log.error("Razorpay refund failed: {}",e.getMessage());
+            throw new RuntimeException("Refund failed: " + e.getMessage());
+        }
+    }
+
+    private PaymentDto.PaymentResponse mapToPaymentResponse(Payment payment){
+         return PaymentDto.PaymentResponse.builder()
+                 .id(payment.getId())
+                 .orderId(payment.getOrderId())
+                 .tenantId(payment.getTenantId())
+                 .amount(payment.getAmount())
+                 .currency(payment.getCurrency())
+                 .status(payment.getStatus())
+                 .gatewayPaymentId(payment.getGatewayPaymentId())
+                 .paymentMethod(payment.getPaymentMethod())
+                 .failureReason(payment.getFailureReason())
+                 .createdAt(payment.getCreatedAt()!=null ?  payment.getCreatedAt().toString():null)
+                 .completedAt(payment.getCompletedAt()!=null ? payment.getCompletedAt().toString():null)
+                 .build();
+    }
+
 
 
     }
