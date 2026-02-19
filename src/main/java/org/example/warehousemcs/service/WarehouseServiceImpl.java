@@ -1,5 +1,6 @@
 package org.example.warehousemcs.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -207,6 +209,17 @@ public class WarehouseServiceImpl implements WarehouseService {
     }
 
     private void publishWarehouseEvent(String eventType,WarehouseDTO warehouse){
+        try{
+            String message = objectMapper.writeValueAsString(
+                    new WarehouseEvent(eventType,warehouse)
+            );
+            KafkaTemplate.send(WAREHOUSE_TOPIC,warehouse.getWarehouseCode(),message);
+            log.info("Published {} event for warehouse: {}",eventType,warehouse.getWarehouseCode());
+
+        }catch(JsonProcessingException e){
+            log.error("Error publishing warehouse event",e);
+
+        }
 
     }
 
@@ -218,7 +231,7 @@ public class WarehouseServiceImpl implements WarehouseService {
         Warehouse warehouse = warehouseRepository.findByWarehouseCodeAndTenantId(warehouseCode, tenantId)
                 .orElseThrow(() -> new RuntimeException("Warehouse not found"));
 
-        Double newUtilization = warehouse.getCurrentUtilization() + utilizationChange;
+        double newUtilization = warehouse.getCurrentUtilization() + utilizationChange;
 
         if (newUtilization < 0) {
             throw new RuntimeException("Utilization cannot be negative");
@@ -239,35 +252,77 @@ public class WarehouseServiceImpl implements WarehouseService {
     }
 
     private void cacheWarehouse(WarehouseDTO warehouse){
-
+    String cacheKey = CACHE_PREFIX + warehouse.getId() + ":"+warehouse.getTenantId();
+    redisTemplate.opsForValue().set(cacheKey,warehouse,1, TimeUnit.HOURS);
 
     }
 
     private void evictCache(Long id,String tenantId){
-
+    String cacheKey = CACHE_PREFIX +  id + ":" + tenantId;
+    redisTemplate.delete(cacheKey);
     }
 
-    private void updateWarehouseFields(Warehouse warehouse,WarehouseRequest warehouseRequest){
-
+    private void updateWarehouseFields(Warehouse warehouse,WarehouseRequest request){
+        warehouse.setName(request.getName());
+        warehouse.setLocation(request.getLocation());
+        warehouse.setAddress(request.getAddress());
+        warehouse.setCity(request.getCity());
+        warehouse.setStatus(request.getStatus());
+        warehouse.setState(request.getState());
+        warehouse.setCountry(request.getCountry());
+        warehouse.setZipCode(request.getZipCode());
+        warehouse.setManagerName(request.getManagerName());
+        warehouse.setContactNumber(request.getContactNumber());
+        warehouse.setCapacity(request.getCapacity());
+        warehouse.setCurrentUtilization(request.getCurrentUtilization());
+        warehouse.setEmail(request.getEmail());
     }
 
     private Warehouse mapToEntity(WarehouseRequest request){
         Warehouse warehouse = new Warehouse();
+        warehouse.setWarehouseCode(request.getWarehouseCode());
+        warehouse.setName(request.getName());
+        warehouse.setLocation(request.getLocation());
+        warehouse.setAddress(request.getAddress());
+        warehouse.setState(request.getState());
+        warehouse.setCity(request.getCity());
+        warehouse.setCountry(request.getCountry());
+        warehouse.setZipCode(request.getZipCode());
+        warehouse.setManagerName(request.getManagerName());
+        warehouse.setEmail(request.getEmail());
+        warehouse.setCapacity(request.getCapacity());
+        warehouse.setCurrentUtilization(request.getCurrentUtilization());
+        warehouse.setStatus(request.getStatus());
+        warehouse.setTenantId(request.getTenantId());
+        warehouse.setContactNumber(request.getContactNumber());
+
         return warehouse;
     }
 
-    private WarehouseDTO mapToDTO(Warehouse warehouse){
-        return WarehouseDTO.builder()
-                .id(warehouse.getId())
-                .warehouseCode(warehouse.getWarehouseCode())
-                .name(warehouse.getName())
-                .currentUtilization(warehouse.getCurrentUtilization())
-                .active(warehouse.getActive())
-                .build();
-
-
-
+    private WarehouseDTO mapToDTO(Warehouse warehouse) {
+        return new WarehouseDTO(
+                warehouse.getId(),
+                warehouse.getWarehouseCode(),
+                warehouse.getName(),
+                warehouse.getLocation(),
+                warehouse.getAddress(),
+                warehouse.getCity(),
+                warehouse.getState(),
+                warehouse.getCountry(),
+                warehouse.getZipCode(),
+                warehouse.getManagerName(),
+                warehouse.getContactNumber(),
+                warehouse.getEmail(),
+                warehouse.getCapacity(),
+                warehouse.getCurrentUtilization(),
+                warehouse.getStatus(),
+                warehouse.getTenantId(),
+                warehouse.getCreatedAt(),
+                warehouse.getUpdatedAt(),
+                warehouse.getActive()
+        );
     }
+
     private record WarehouseEvent(String eventType,WarehouseDTO warehouse){}
 
 

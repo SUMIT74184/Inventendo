@@ -27,10 +27,11 @@ public class WarehouseRequest {
     private String zipCode;
 
 
+
     @NotBlank(message = "Manager name is required")
     private String managerName;
 
-    private String contactNumber;
+    private int contactNumber;
 
     @Email(message = "Invalid email format")
     private String email;

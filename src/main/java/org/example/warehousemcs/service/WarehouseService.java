@@ -2,14 +2,13 @@ package org.example.warehousemcs.service;
 
 import org.example.warehousemcs.Dto.WarehouseDTO;
 import org.example.warehousemcs.Dto.WarehouseRequest;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 
 public interface WarehouseService {
 
-    WarehouseDTO createWarehouse(WarehouseRequest request);
+     WarehouseDTO createWarehouse(WarehouseRequest request);
 
     WarehouseDTO updateWarehouse(Long id, WarehouseRequest request);
 

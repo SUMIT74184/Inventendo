@@ -17,7 +17,6 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-
 public class Warehouse implements Serializable {
 
     @Id
@@ -40,12 +39,14 @@ public class Warehouse implements Serializable {
 
     private String city;
 
+    private String state;
+
     private String country;
 
     private String zipCode;
 
     @Column(nullable = false)
-    private String managerNamee;
+    private String managerName;
 
     private String email;
 
@@ -63,10 +64,14 @@ public class Warehouse implements Serializable {
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
-    private LocalDateTime updateAt;
+    private LocalDateTime updatedAt;
 
     @Column(nullable = false)
     private Boolean active = true;
+
+
+    private int ContactNumber;
+
 
 
 }
