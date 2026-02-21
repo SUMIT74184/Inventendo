@@ -35,6 +35,11 @@ public class Tenant {
     @Column(length = 500)
     private String address;
 
+    @Column(length = 10)
+    private String contactPhone;
+
+    @Column(length = 500)
+    private String description;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

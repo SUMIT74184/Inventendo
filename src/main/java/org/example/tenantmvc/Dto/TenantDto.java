@@ -2,6 +2,7 @@ package org.example.tenantmvc.Dto;
 
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.example.tenantmvc.Entity.Tenant;
@@ -11,7 +12,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-
+@Builder
 public class TenantDto {
 
     private Long id;
