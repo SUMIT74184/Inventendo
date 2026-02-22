@@ -42,11 +42,53 @@ public class TenantController {
     }
 
     @GetMapping("/status/{status}")
-    public ResponseEntity<List<TenantDto>> getTenantsByStatus(Tenant.TenantStatus status){
+    public ResponseEntity<List<TenantDto>> getTenantsByStatus(@PathVariable Tenant.TenantStatus status){
         log.info("Request to get tenants by status: {}", status);
         List<TenantDto> tenants = tenantService.getTenantsByStatus(status);
         return ResponseEntity.ok(tenants);
     }
+
+
+    @PutMapping("/{tenantCode}")
+    public ResponseEntity<TenantDto>updateTenant(
+           @PathVariable String tenantCode,
+           @Valid @RequestBody TenantDto tenantDto
+    ){
+        log.info("Request to update tenant: {}",tenantCode);
+        TenantDto updateTenant =tenantService.updateTenant(tenantCode,tenantDto);
+        return ResponseEntity.ok(updateTenant);
+
+    }
+    @PatchMapping("/{tenantCode}/status")
+    public ResponseEntity<Void> updateTenantStatus(
+            @PathVariable String tenantCode,
+            @RequestParam Tenant.TenantStatus status
+    ){
+        log.info("Request to update tenant status: {} to {}",tenantCode,status);
+        tenantService.updateTenantStatus(tenantCode,status);
+        return ResponseEntity.ok().build();
+
+    }
+
+    @PatchMapping("/{tenantCode}/subscription")
+    public ResponseEntity<Void>upgradeTenantSubscription(
+            @PathVariable String tenantCode,
+            @RequestParam Tenant.SubscriptionTier tier
+    ){
+        log.info("Request to upgrade tenant subscription: {} to {}",tenantCode,tier);
+        tenantService.upgradeTenantSubscription(tenantCode,tier);
+        return ResponseEntity.ok().build();
+    }
+
+
+    @DeleteMapping("/{tenantCode}")
+    public ResponseEntity<Void> deleteTenant(@PathVariable String tenantCode) {
+        log.info("Request to delete tenant: {}", tenantCode);
+        tenantService.deleteTenant(tenantCode);
+        return ResponseEntity.noContent().build();
+    }
+
+
 
 
 

@@ -214,8 +214,7 @@ public class TenantService {
     }
 
 
+    public void upgradeTenantSubscription(String tenantCode, Tenant.SubscriptionTier tier) {
 
-
-
-
+    }
 }
