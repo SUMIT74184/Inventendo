@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: movement-postgres # Changed to reflect this service
+    environment:
+      POSTGRES_DB: movement_db # CHANGED: Movement gets its own DB!
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - inventory-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: movement-redis # Renamed for clarity
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - inventory-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: global-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - inventory-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: global-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # CHANGED: Crucial fix for Docker-to-Docker vs Host-to-Docker communication
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://global-kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - inventory-network
+
+  movement-service:
+    build:
+      context: .
+      dockerfile: movement-service/Dockerfile
+    container_name: movement-service
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+    ports:
+      - "8081:8081"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: movement_db # CHANGED: Pointing to the correct isolated DB
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # CHANGED: Using the INTERNAL listener for Docker-to-Docker routing
+      KAFKA_BOOTSTRAP_SERVERS: global-kafka:29092
+      SERVER_PORT: 8081
+    networks:
+      - inventory-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  # It is perfectly fine to keep the network named this, as all your
+  # microservices (inventory, movement, etc.) will use this shared network to talk to Kafka/Redis.
+  inventory-network:
+    driver: bridge
