@@ -1,5 +1,6 @@
 package org.example.auth.Repository;
 
+import org.example.auth.Entity.OAuth2Provider;
 import org.example.auth.Entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -25,5 +26,7 @@ public interface UserRepository extends JpaRepository<User,String> {
 
 
     long countByTenantId(String tenantId);
+
+    Optional<User> findByOauth2IdAndProvider(String oauth2Id, OAuth2Provider provider);
 
 }

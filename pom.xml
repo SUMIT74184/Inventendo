@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.2.0</version>
+        <version>3.4.2</version>
         <relativePath/>
     </parent>
 
@@ -73,6 +73,7 @@
             <scope>runtime</scope>
         </dependency>
 
+
         <!-- Lombok: Reduces boilerplate code - auto-generates getters, setters, constructors -->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -81,10 +82,10 @@
         </dependency>
 
         <!-- Spring Cloud Eureka Client: Registers this service with the Service Discovery server -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.cloud</groupId>-->
+<!--            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>-->
+<!--        </dependency>-->
 
         <!-- Redis: For caching + storing blacklisted JWT tokens (logout feature) -->
         <dependency>
@@ -103,12 +104,20 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-client</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
             <scope>runtime</scope>
         </dependency>
+
     </dependencies>
+
 
     <dependencyManagement>
         <dependencies>

@@ -10,10 +10,9 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+
 
 @Builder
 @Entity
@@ -42,6 +41,24 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String tenantId;
 
+    //OAUTH2 - provider
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private OAuth2Provider provider = OAuth2Provider.LOCAL;
+
+    @Column(unique = true)
+    private String oauth2Id;
+
+    private String profilePictureUrl;
+
+    /* *
+     * @Enumerated(EnumType.STRING): Store enum as "ADMIN", "MANAGER" text in DB
+     * instead of 0, 1, 2 numbers. STRING is safer — if you reorder enums, data stays correct.
+
+     * @ElementCollection: Stores a collection of simple values in a separate table.
+     * @CollectionTable: Names that separate table "user_roles"
+     */
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
@@ -76,7 +93,7 @@ public class User implements UserDetails {
         updatedAt=LocalDateTime.now();
     }
 
-//    from here UserDetails Interface methods
+// from here UserDetails Interface methods
     //Spring Security calls these to get user info during authentication
 
     @Override
