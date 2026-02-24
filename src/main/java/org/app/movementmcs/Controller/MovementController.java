@@ -48,6 +48,8 @@ public class MovementController {
         return ResponseEntity.ok(movements);
     }
 
+
+    @GetMapping("/date-range")
     public ResponseEntity<List<MovementResponse>>getMovementsByDateRange(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate)
