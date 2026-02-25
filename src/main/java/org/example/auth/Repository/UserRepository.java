@@ -30,3 +30,9 @@ public interface UserRepository extends JpaRepository<User,String> {
     Optional<User> findByOauth2IdAndProvider(String oauth2Id, OAuth2Provider provider);
 
 }
+//Added /oauth2/error endpoint for OAuth2 failures
+//Added /health endpoint for Kubernetes
+//Added /users endpoint stub (admin only)
+//Improved /me endpoint
+//Better error handling
+//Comprehensive JavaDoc comments

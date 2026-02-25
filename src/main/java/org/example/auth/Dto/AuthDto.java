@@ -8,7 +8,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.example.auth.Entity.Role;
-
 import java.util.Set;
 
 public class AuthDto {
@@ -18,7 +17,6 @@ public class AuthDto {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Register{
-
 
         @NotBlank(message = "First name is required")
         private String firstName;
