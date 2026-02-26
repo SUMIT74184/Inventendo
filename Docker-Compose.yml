@@ -1,0 +1,202 @@
+version: '3.8'
+
+# HOW TO USE:
+# 1. Build images:  docker-compose build
+# 2. Start all:     docker-compose up -d
+# 3. Check logs:    docker-compose logs -f auth-service
+# 4. Stop all:      docker-compose down
+# 5. Wipe data:     docker-compose down -v   (deletes volumes too)
+#
+# Dashboard URLs once running:
+#   Eureka (service registry): http://localhost:8761
+#   Kafka UI (message browser): http://localhost:8090
+#   Auth Service API:           http://localhost:8081/api/auth
+#   Billing Service API:        http://localhost:8085/api/billing
+
+services:
+
+  # --- INFRASTRUCTURE ---------------------------------------------------------
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: inventory-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-databases.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - inventory-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: inventory-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - inventory-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: inventory-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - inventory-network
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: inventory-kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # TWO listeners:
+      # PLAINTEXT_INTERNAL (29092): containers inside Docker network use this
+      # PLAINTEXT_EXTERNAL (9092):  your host machine (IntelliJ, Postman) uses this
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT_INTERNAL:PLAINTEXT,PLAINTEXT_EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT_INTERNAL://0.0.0.0:29092,PLAINTEXT_EXTERNAL://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT_INTERNAL://kafka:29092,PLAINTEXT_EXTERNAL://localhost:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+      KAFKA_LOG_RETENTION_HOURS: 168
+    networks:
+      - inventory-network
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: inventory-kafka-ui
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: inventory-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    networks:
+      - inventory-network
+
+  eureka:
+    image: springcloud/eureka
+    container_name: inventory-eureka
+    ports:
+      - "8761:8761"
+    networks:
+      - inventory-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # --- MICROSERVICES ----------------------------------------------------------
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: inventory-auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      eureka:
+        condition: service_healthy
+    networks:
+      - inventory-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+#  billing-service:
+#    build:
+#      context: ./billing-service
+#      dockerfile: Dockerfile
+#    container_name: inventory-billing-service
+#    ports:
+#      - "8085:8085"
+#    environment:
+#      SPRING_PROFILES_ACTIVE: docker
+#      DB_USERNAME: postgres
+#      DB_PASSWORD: postgres
+#      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-rzp_test_placeholder}
+#      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-placeholder}
+#      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_placeholder}
+#      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_placeholder}
+#      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-pk_test_placeholder}
+#    depends_on:
+#      postgres:
+#        condition: service_healthy
+#      kafka:
+#        condition: service_healthy
+#      eureka:
+#        condition: service_healthy
+#      auth-service:
+#        condition: service_healthy
+#    networks:
+#      - inventory-network
+#    restart: on-failure
+#    healthcheck:
+#      test: ["CMD-SHELL", "wget -qO- http://localhost:8085/actuator/health || exit 1"]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 60s
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  inventory-network:
+    driver: bridge

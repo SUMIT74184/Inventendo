@@ -199,7 +199,27 @@ public class AuthService {
                 Duration.ofDays(7)
         );
     }
+    /* *
+     * Get all users for a specific tenant.
+     * Used by TENANT_ADMIN to manage their team.
+     *
+     * @Cacheable("tenant-users"): Cached for 15 min to avoid DB load on repeated admin page visits.
+     * Cache is evicted when any user in the tenant is updated/deleted.
+     */
+    @Cacheable(value = "tenant-users", key = "#tenantId")
+    public List<User> getUsersByTenant(String tenantId) {
+        log.debug("Loading users for tenant: {} from DB (cache miss)", tenantId);
+        return userRepository.findByTenantId(tenantId);
+    }
 
+    /**
+     * Evict the tenant-users cache when a user is added/removed/updated.
+     * Call this from user management endpoints (create/update/delete user).
+     */
+    @CacheEvict(value = "tenant-users", key = "#tenantId")
+    public void evictTenantUsersCache(String tenantId) {
+        log.debug("Evicting tenant-users cache for: {}", tenantId);
+    }
     /**
      * publishEvent: Sends a structured JSON payload to a Kafka topic.
      *
