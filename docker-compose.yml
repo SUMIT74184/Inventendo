@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # Changed service name to 'postgres' to match your SPRING_DATASOURCE_URL
+  postgres:
+    image: postgres:15-alpine
+    container_name: warehouse-postgres
+    environment:
+      POSTGRES_DB: warehousedb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432" # Host 5433 -> Container 5432
+    volumes:
+      - warehouse-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d warehousedb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - warehouse-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: warehouse-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - warehouse-network
+
+  kafka:
+    image: apache/kafka:latest
+    container_name: warehouse-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - warehouse-network
+
+  warehouse-service:
+    build: .
+    container_name: warehouse-service
+    ports:
+      - "8083:8080" # Maps local 8083 to Spring's internal 8080
+    environment:
+      # These now align perfectly with the service names above
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/warehousedb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SERVER_PORT: 8080
+    depends_on:
+      postgres:
+        condition: service_healthy # App waits until DB is actually ready
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+    networks:
+      - warehouse-network
+
+volumes:
+  warehouse-postgres-data:
+
+networks:
+  warehouse-network:
+    driver: bridge

@@ -25,5 +25,5 @@ public interface WarehouseRepository extends JpaRepository<Warehouse,Long> {
     @Query("SELECT w FROM Warehouse w WHERE w.tenantId = :tenantId AND w.CurrentUtilization < w.capacity")
     List<Warehouse>findAvailableWarehouses(String tenantId);
 
-    boolean existByWarehouseCodeAndTenantId(String warehouseCode,String tenantId);
+    boolean existsByWarehouseCodeAndTenantId(String warehouseCode, String tenantId);
 }

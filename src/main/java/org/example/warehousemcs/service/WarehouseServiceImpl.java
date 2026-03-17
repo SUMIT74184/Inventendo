@@ -38,7 +38,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     public WarehouseDTO createWarehouse(WarehouseRequest req) {
         log.info("Creating warehouse:{}", req.getWarehouseCode());
 
-        if (warehouseRepository.existByWarehouseCodeAndTenantId(
+        if (warehouseRepository.existsByWarehouseCodeAndTenantId(
                 req.getWarehouseCode(), req.getTenantId())) {
             throw new RuntimeException("Warehouse with code " + req.getWarehouseCode() + "already exists");
 

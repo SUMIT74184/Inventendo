@@ -31,7 +31,7 @@ public class WarehouseRequest {
     @NotBlank(message = "Manager name is required")
     private String managerName;
 
-    private int contactNumber;
+    private String contactNumber;
 
     @Email(message = "Invalid email format")
     private String email;

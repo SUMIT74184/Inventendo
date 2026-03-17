@@ -70,7 +70,7 @@ public class Warehouse implements Serializable {
     private Boolean active = true;
 
 
-    private int ContactNumber;
+    private String ContactNumber;
 
 
 
