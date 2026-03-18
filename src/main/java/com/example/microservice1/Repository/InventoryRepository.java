@@ -23,10 +23,10 @@ public interface InventoryRepository extends JpaRepository<Inventory,Long> {
 
     List<Inventory> findByWarehouseId(String warehouseId);
 
-    @Query("SELECT i FROM Inventory i WHERE i.quantity <= i.reorderLevel And i.InventoryStatus='ACTIVE'")
+    @Query("SELECT i FROM Inventory i WHERE i.quantity <= i.reorderLevel And i.inventoryStatus='ACTIVE'")
     List<Inventory> findLowStocksItems();
 
-    @Query("SELECT i FROM Inventory i WHERE i.warehouseId = :warehouseId AND i.InventoryStatus = 'ACTIVE'")
+    @Query("SELECT i FROM Inventory i WHERE i.warehouseId = :warehouseId AND i.inventoryStatus = 'ACTIVE'")
     List<Inventory> findActiveByWarehouse(@Param("warehouseId") String warehouseId);
 
     @Modifying(clearAutomatically = true)

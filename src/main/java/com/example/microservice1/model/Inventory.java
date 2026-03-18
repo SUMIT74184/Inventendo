@@ -70,6 +70,8 @@ public class Inventory {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
+    private String inventoryStatus;
+
 
     @Version
     private Long version;
@@ -82,7 +84,7 @@ public class Inventory {
         return quantity <= reorderLevel;
     }
 
-    public enum InventoryStatus{
+    public enum inventoryStatus{
         ACTIVE,INACTIVE,DISCONTINUED
     }
 

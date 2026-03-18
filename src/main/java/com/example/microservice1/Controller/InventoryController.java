@@ -88,7 +88,14 @@ public class InventoryController {
         inventoryService.releaseReservedStock(sku,request.get("quantity"));
         return ResponseEntity.ok().build();
     }
-
+    @PostMapping("/{sku}/cancel-reservation")
+    public ResponseEntity<Void>cancelReservation(
+            @PathVariable String sku,
+         @RequestParam Integer quantity
+    ){
+        inventoryService.cancelReservation(sku,quantity);
+        return ResponseEntity.ok().build();
+    }
 
 
 

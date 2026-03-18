@@ -11,7 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.context.annotation.Bean;
+// import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
@@ -21,19 +21,20 @@ import java.util.stream.Collectors;
 
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
+@RequiredArgsConstructor
 public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
 
-    private final KafkaTemplate<String,Object> KafkaTemplate;
+    private final KafkaTemplate<String,Object> kafkaTemplate;
 
     @Transactional
     @CacheEvict(value = "inventory", key = "#request.sku")
     public InventoryResponse createInventory(InventoryRequest request){
         Inventory inventory = new Inventory();
         inventory.setSku(request.getSku());
+        inventory.setProductName(request.getProductName());
         inventory.setDescription(request.getDescription());
         inventory.setQuantity(request.getQuantity());
         inventory.setReorderLevel(request.getReorderLevel());
@@ -42,11 +43,14 @@ public class InventoryService {
         inventory.setWarehouseId(request.getWarehouseId());
         inventory.setLocation(request.getLocation());
 
+        inventory.setReservedQuantity(0); 
+        inventory.setInventoryStatus("ACTIVE");
+
         Inventory saved = inventoryRepository.save(inventory);
         log.info("Created inventory for SKU: {}",saved.getSku());
 
         //sending the data to the kafka
-        KafkaTemplate.send("inventory-created",saved.getSku(),saved);
+        kafkaTemplate.send("inventory-created",saved.getSku(),saved);
         return InventoryResponse.fromEntity(saved);
 
     }
@@ -87,7 +91,7 @@ public class InventoryService {
         inventory.setQuantity(quantity);
         Inventory updated = inventoryRepository.save(inventory);
         log.info("Updated quantity for SKU: {} to {}",updated.getSku(),quantity);
-        KafkaTemplate.send("inventory-updated",sku,updated);
+        kafkaTemplate.send("inventory-updated",sku,updated);
 
         return InventoryResponse.fromEntity(updated);
     }
@@ -112,19 +116,39 @@ public class InventoryService {
         inventoryRepository.save(inventory);
 
         log.info("Reserved {} units for SKU: {}",quantity,sku);
-        KafkaTemplate.send("inventory-reserved",sku,quantity);
+        kafkaTemplate.send("inventory-reserved",sku,quantity);
     }
 
-    public void releaseReservedStock(String sku,Integer quantity){
+    @Transactional
+    @CacheEvict(value = "inventory", key = "#sku") // Added cache eviction
+    public void releaseReservedStock(String sku, Integer quantity) {
         Inventory inventory = inventoryRepository.findBySkuWithLock(sku)
-                .orElseThrow(()->new InventoryNotFoundException("Inventory not found sku : " + sku));
+                .orElseThrow(() -> new InventoryNotFoundException("Inventory not found sku : " + sku));
+
+        inventory.setReservedQuantity(Math.max(0, inventory.getReservedQuantity() - quantity));
+        inventory.setQuantity(Math.max(0, inventory.getQuantity() - quantity));
+
+        inventoryRepository.save(inventory);
+        log.info("Released {} units for SKU: {}", quantity, sku);
+
+        // Fix the call and handle the result
+        kafkaTemplate.send("inventory-released", sku, quantity)
+                .whenComplete((result, ex) -> {
+                    if (ex != null) log.error("Failed to send Kafka message", ex);
+                });
+    }
+    @Transactional
+    @CacheEvict(value = "inventory", key = "#sku")
+    public void cancelReservation(String sku, Integer quantity) {
+        Inventory inventory = inventoryRepository.findBySkuWithLock(sku)
+                .orElseThrow(() -> new InventoryNotFoundException("SKU not found: " + sku));
 
         inventory.setReservedQuantity(inventory.getReservedQuantity() - quantity);
-        inventory.setQuantity(inventory.getQuantity() - quantity);
+
         inventoryRepository.save(inventory);
 
-        log.info("Released {} units for SKU: {}",quantity,sku);
-        KafkaTemplate.send("inventory-released",sku,quantity);
+        log.info("Payment Failed: Cancelled reservation of {} units for SKU: {}", quantity, sku);
+        kafkaTemplate.send("inventory-cancelled", sku, quantity);
     }
 
 
