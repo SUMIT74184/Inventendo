@@ -5,8 +5,6 @@ import lombok.*;
 
 import java.math.BigDecimal;
 
-
-
 @Entity
 @Table(name = "stock_movements", indexes = {
         @Index(name = "idx_tenant_product", columnList = "tenant_id, product_id"),
