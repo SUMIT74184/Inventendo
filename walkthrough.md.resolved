@@ -1,0 +1,51 @@
+# Production Readiness & Testing Verification
+
+I have successfully tested and Dockerized the Auth Microservice. Along the way, several critical issues preventing it from running and serving requests were addressed. 
+
+## 1. What was fixed to make it Production Ready?
+*   **Database Credentials & Configuration:** 
+    * Updated [application-docker.yml](file:///home/sumit/IdeaProjects/Auth/src/main/resources/application-docker.yml) to consume `DB_USERNAME` and `DB_PASSWORD` rather than using hardcoded `postgres` values. 
+    * Updated [init-databases.sql](file:///home/sumit/IdeaProjects/Auth/init-databases.sql) to correctly create `auth_db`.
+    * Changed the mapped Docker port to `5433:5432` to avoid conflicts if you have a local PostgreSQL running.
+*   **Entity Data Integrity:** Added `@Builder.Default` to the `OAuth2Provider provider` field in [User.java](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/Entity/User.java). Without this, Lombok's builder passed `null` to the DB, which triggered a `NOT NULL` constraint violation during user registration.
+*   **Spring Configuration & Circular Dependencies:** 
+    * Separated the BCrypt [PasswordEncoder](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/config/PasswordEncoderConfig.java#8-16) into its own `@Configuration` class. Previously, [SecurityConfig](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/config/SecurityConfig.java#42-166) created the encoder while injecting [CustomOAuth2UserService](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/Service/CustomOAuth2UserService.java#45-201) (which implicitly relies on the encoder), causing Spring Boot to crash loop on startup due to a circular dependency.
+    * Fixed the initialization of `AuthenticationProvider` to explicitly use the [PasswordEncoder](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/config/PasswordEncoderConfig.java#8-16), otherwise `POST /api/auth/login` failed with a "no default password encoder" error.
+*   **JPA Repository Grammar:** Changed `existByEmail` to the valid JPA keyword [existsByEmail](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/Repository/UserRepository.java#20-21) across [UserRepository](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/Repository/UserRepository.java#13-33), [AuthService](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/Service/AuthService.java#27-259), and [AuthKafkaListener](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/config/AuthKafkaListener.java#27-112).
+*   **Docker Container Health Checks:** Updated the Zookeeper health check command because the Confluent Zookeeper `7.5.0` image disabled `ruok` 4-letter commands. Used `cub zk-ready` instead.
+*   **Maven Build Fixes in Docker:** Downgraded the [pom.xml](file:///home/sumit/IdeaProjects/Auth/pom.xml) `<modelVersion>` from `4.1.0` to `4.0.0` to support the Maven 3 container build layer without errors.
+
+## 2. Testing the Application manually
+Once the Docker network stood up successfully (`auth-service`, `postgres`, [redis](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/config/RedisConfig.java#33-51), [kafka](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/config/KafkaConfig.java#72-80), `zookeeper`, `kafka-ui`), I fired a test registration and login flow for a user.
+
+### Registration Request
+```bash
+curl -s -X POST http://localhost:8081/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+        "firstName":"Jane",
+        "lastName":"Doe",
+        "email":"jane@example.com",
+        "password":"password123",
+        "tenantId":"tenant-1"
+      }'
+```
+
+The request successfully executed, meaning a user was properly mapped into the database, assigned roles, and fully tracked. Upon logging in with those credentials, the service correctly authenticated the BCrypt password and returned valid Access/Refresh JWT Tokens.
+
+## 3. Database Output for Authorized Users
+When a user registers for production, here is exactly safely how it is persisted in the PostgreSQL storage, as extracted directly from the running docker-container instance (`inventory-postgres`):
+
+### `users` Table
+| id | email | first_name | last_name | tenant_id | provider | password (Encrypted) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `b89b417c-dd80-45cf...` | `jane@example.com` | Jane | Doe | `tenant-1` | `LOCAL` | `$2a$10$wWV3cj34SA...` |
+
+**Security Note:** The password string is safely hashed utilizing BCrypt ($2a) utilizing 10 rounds of computational hashing.
+
+### `user_roles` Table
+| user_id | role |
+| :--- | :--- |
+| `b89b417c-dd80-45cf...` | `STAFF` |
+
+Since roles are annotated as `@ElementCollection` in the JPA entity, Hibernate orchestrates linking multiple potential roles via mapping them accurately into this separate optimized lookup table `user_roles`.

@@ -60,7 +60,7 @@ public class AuthKafkaListener {
             String tenantId = record.key(); // We send tenantId as the Kafka message key
 
             // Check if admin already exists for this tenant (idempotency — safe to retry)
-            boolean adminExists = userRepository.existByEmail("admin@tenant-" + tenantId + ".local");
+            boolean adminExists = userRepository.existsByEmail("admin@tenant-" + tenantId + ".local");
             if (adminExists) {
                 log.info("Admin already exists for tenant: {}", tenantId);
                 ack.acknowledge();

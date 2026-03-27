@@ -45,6 +45,7 @@ public class User implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private OAuth2Provider provider = OAuth2Provider.LOCAL;
 
     @Column(unique = true)

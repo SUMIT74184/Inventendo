@@ -1,0 +1,34 @@
+# Task Plan: Auth Microservice Production Readiness & Testing
+
+## Phase 1: Code & Configuration Review (In Progress)
+- [x] Review Docker configuration ([Dockerfile](file:///home/sumit/IdeaProjects/Auth/Dockerfile), [docker-compose.yml](file:///home/sumit/IdeaProjects/Auth/docker-compose.yml))
+- [x] Review database configuration and properties ([application.yml](file:///home/sumit/IdeaProjects/Auth/src/main/resources/application.yml), [application-docker.yml](file:///home/sumit/IdeaProjects/Auth/src/main/resources/application-docker.yml))
+- [x] Review security settings ([SecurityConfig.java](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/config/SecurityConfig.java), [JwtAuthenticationFilter.java](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/Util/JwtAuthenticationFilter.java))
+- [x] Review Kafka properties ([KafkaConfig.java](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/config/KafkaConfig.java), [AuthKafkaListener.java](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/config/AuthKafkaListener.java))
+- [x] Review Redis configuration ([RedisConfig.java](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/config/RedisConfig.java))
+- [x] Review Entities ([User.java](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/Entity/User.java), [Role.java](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/Entity/Role.java), [OAuth2Provider.java](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/Entity/OAuth2Provider.java))
+- [x] Review Auth flows ([AuthController.java](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/Controller/AuthController.java), [AuthService.java](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/Service/AuthService.java), [CustomOAuth2UserService.java](file:///home/sumit/IdeaProjects/Auth/src/main/java/org/example/auth/Service/CustomOAuth2UserService.java))
+
+## Phase 2: Fix Issues & Improve Production Readiness (Completed)
+- [x] Fix property mismatches in Spring Data Redis configuration
+- [x] Fix JWT Secret parsing (HMAC SHA) vs Config requirement
+- [x] Fix Kafka properties mismatch between yaml and Config class
+- [x] Fix missing Eureka dependency / configuration if needed
+- [x] Fix database initialization script
+
+## Phase 3: Setup & Run Docker Environment (Completed)
+- [x] Ensure Docker daemon is running
+- [x] Run `docker-compose up -d`
+- [x] Wait for Postgres, Redis, Kafka, Zookeeper to become healthy
+
+## Phase 4: Test the Application / Verify Output (Completed)
+- [x] Start the Spring Boot Auth Service locally (or inside Docker)
+- [x] Test Registration endpoint
+- [x] Test Login endpoint 
+- [x] Verify what output is stored in PostgreSQL DB (`users` table check)
+- [x] Summarize findings for the User Login Endpoint (POST `/api/auth/login`)
+- [x] Verify JWT tokens (Access and Refresh)
+- [x] Test Token Validation (GET `/api/auth/validate`)
+- [x] Test Logout (POST `/api/auth/logout`)
+- [x] Verify token is blacklisted in Redis
+- [x ] Check Kafka UI for generated events (`user.registered`, `user.login`, etc.)

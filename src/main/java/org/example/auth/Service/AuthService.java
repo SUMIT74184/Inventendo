@@ -39,7 +39,7 @@ public class AuthService {
 
     @Transactional
     public AuthDto.AuthResponse register(Register request) {
-        if (userRepository.existByEmail(request.getEmail())) {
+        if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Email already registered");
         }
 

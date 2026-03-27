@@ -1,1 +1,1 @@
-CREATE DATABASE "auth-service";
+CREATE DATABASE "auth_db";
